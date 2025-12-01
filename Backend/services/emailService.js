@@ -17,42 +17,25 @@ class EmailService {
     console.log('   Has valid config:', hasEmailConfig);
 
     if (hasEmailConfig) {
-      // Check if using SendGrid (different configuration)
-      const isSendGrid = process.env.SMTP_HOST && process.env.SMTP_HOST.includes('sendgrid');
-      
-      if (isSendGrid) {
-        // SendGrid configuration
-        this.transporter = nodemailer.createTransport({
-          host: 'smtp.sendgrid.net',
-          port: 587,
-          secure: false,
-          auth: {
-            user: 'apikey',
-            pass: process.env.SMTP_PASS // SendGrid API key
-          }
-        });
-        console.log('📧 Using SendGrid email service');
-      } else {
-        // Gmail or other SMTP configuration
-        this.transporter = nodemailer.createTransport({
-          host: process.env.SMTP_HOST || 'smtp.gmail.com',
-          port: parseInt(process.env.SMTP_PORT) || 587,
-          secure: false, // true for 465, false for other ports
-          auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS
-          },
-          // Additional options for better reliability
-          connectionTimeout: 15000, // 15 seconds
-          greetingTimeout: 15000,
-          socketTimeout: 15000,
-          // Disable verification on startup - verify on first send instead
-          pool: false,
-          maxConnections: 1,
-          maxMessages: 3
-        });
-        console.log('📧 Using SMTP email service (Gmail or other)');
-      }
+      // Gmail SMTP configuration
+      this.transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.SMTP_PORT) || 587,
+        secure: false, // true for 465, false for other ports
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS
+        },
+        // Additional options for better reliability
+        connectionTimeout: 15000, // 15 seconds
+        greetingTimeout: 15000,
+        socketTimeout: 15000,
+        // Disable verification on startup - verify on first send instead
+        pool: false,
+        maxConnections: 1,
+        maxMessages: 3
+      });
+      console.log('📧 Using Gmail SMTP email service');
 
       console.log('✅ Email service configured');
       console.log('💡 Note: Connection will be verified on first email send attempt');
@@ -94,10 +77,13 @@ class EmailService {
   }
 
   async sendPasswordResetOTP(userEmail, otp, userName = 'User') {
+    // Use SMTP_USER as the from email (should be your Gmail address)
+    const fromEmail = process.env.SMTP_USER || 'noreply@fashionforward.com';
+    
     const mailOptions = {
       from: {
         name: 'Fashion Forward',
-        address: process.env.SMTP_USER || 'noreply@fashionforward.com'
+        address: fromEmail
       },
       to: userEmail,
       subject: 'Your Password Reset OTP - Fashion Forward',
@@ -117,17 +103,28 @@ class EmailService {
 
     try {
       // Try to send email with timeout
+      const timeoutDuration = 15000; // 15 seconds
+      
       const result = await Promise.race([
         this.transporter.sendMail(mailOptions),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Email send timeout after 15 seconds')), 15000)
+          setTimeout(() => reject(new Error(`Email send timeout after ${timeoutDuration/1000} seconds`)), timeoutDuration)
         )
       ]);
       console.log('✅ Password reset OTP sent successfully:', result.messageId);
       return { success: true, messageId: result.messageId };
     } catch (error) {
       console.error('❌ Failed to send password reset OTP:', error.message);
-      console.error('   Error details:', error.code || 'Unknown error code');
+      console.error('   Error code:', error.code || 'Unknown');
+      
+      // Check for specific Gmail errors
+      if (error.code === 'EAUTH' || error.responseCode === 535) {
+        console.error('   ⚠️  Gmail authentication failed - check your app password');
+        console.error('   💡 Make sure you\'re using a 16-character App Password, not your regular password');
+      } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET') {
+        console.error('   ⚠️  Gmail connection timeout - common issue from cloud providers');
+        console.error('   💡 Gmail SMTP often times out from cloud servers, but OTP is still generated');
+      }
       
       // Fallback: Log the OTP to console
       console.log('🔢 Password Reset OTP (Fallback - check logs):', otp);
@@ -136,6 +133,7 @@ class EmailService {
       return { 
         success: false, 
         error: error.message,
+        errorCode: error.code,
         fallbackOTP: otp 
       };
     }
