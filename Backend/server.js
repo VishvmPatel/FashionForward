@@ -211,9 +211,17 @@ app.get('/api/health', (req, res) => {
  * They must be placed after all route definitions.
  */
 
+// Handle favicon requests (browsers automatically request this)
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end(); // No content, but successful
+});
+
 // Catch-all route for 404 errors (must be after all other routes)
 app.use('*', (req, res) => {
-  console.log('Route not found:', req.method, req.originalUrl);
+  // Don't log favicon requests as they're just browser noise
+  if (req.originalUrl !== '/favicon.ico') {
+    console.log('Route not found:', req.method, req.originalUrl);
+  }
   res.status(404).json({ message: 'Route not found' });
 });
 
