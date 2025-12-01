@@ -464,30 +464,46 @@ router.post('/forgot-password', [
     );
 
     if (emailResult.success) {
+      // Email sent successfully
       res.json({
         success: true,
         message: 'Password reset OTP sent to your email address.'
       });
-    } else {
-      // In development, we might want to return the OTP
-      if (process.env.NODE_ENV === 'development' && emailResult.fallbackOTP) {
-        res.json({
-          success: true,
-          message: 'Password reset OTP sent to your email address.',
-          developmentOTP: emailResult.fallbackOTP
-        });
-      } else {
-        res.status(500).json({
-          success: false,
-          message: 'Failed to send password reset OTP. Please try again later.'
-        });
+    } else if (emailResult.fallbackOTP) {
+      // Email service not configured or failed, but we have fallback OTP
+      // In production, still return success but log OTP for admin use
+      // In development, include OTP in response for testing
+      const response = {
+        success: true,
+        message: 'Password reset OTP generated. ' + 
+                 (process.env.NODE_ENV === 'production' 
+                   ? 'Please check server logs for OTP (email service not configured).'
+                   : 'Email service not configured - OTP provided for testing.')
+      };
+      
+      if (process.env.NODE_ENV === 'development') {
+        response.developmentOTP = emailResult.fallbackOTP;
       }
+      
+      // Log OTP for admin/debugging purposes
+      console.log(`🔢 Password Reset OTP for ${user.email}: ${emailResult.fallbackOTP}`);
+      
+      res.json(response);
+    } else {
+      // Complete failure - no OTP available
+      console.error('Failed to generate/send OTP:', emailResult.error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to send password reset OTP. Please try again later.'
+      });
     }
   } catch (error) {
     console.error('Forgot password error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
-      message: 'Server error during password reset request'
+      message: 'Server error during password reset request',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
