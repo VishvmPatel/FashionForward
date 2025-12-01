@@ -2,24 +2,44 @@ const nodemailer = require('nodemailer');
 
 class EmailService {
   constructor() {
-    // Create transporter using environment variables or default values
-    this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: process.env.SMTP_PORT || 587,
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: process.env.SMTP_USER || 'your-email@gmail.com',
-        pass: process.env.SMTP_PASS || 'your-app-password'
-      }
-    });
+    // Check if email credentials are configured
+    const hasEmailConfig = process.env.SMTP_USER && 
+                          process.env.SMTP_PASS && 
+                          process.env.SMTP_USER !== 'your-email@gmail.com' &&
+                          process.env.SMTP_PASS !== 'your-app-password';
 
-    // Verify transporter configuration
-    this.verifyConnection();
+    if (hasEmailConfig) {
+      // Create transporter using environment variables
+      this.transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: process.env.SMTP_PORT || 587,
+        secure: false, // true for 465, false for other ports
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS
+        }
+      });
+
+      // Verify transporter configuration (non-blocking)
+      this.verifyConnection();
+    } else {
+      // Email not configured - use fallback mode
+      this.transporter = null;
+      console.log('📧 Email service not configured - using fallback mode (console logging)');
+      console.log('💡 To enable email: Set SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS environment variables');
+    }
   }
 
   async verifyConnection() {
+    if (!this.transporter) return;
+    
     try {
-      await this.transporter.verify();
+      await Promise.race([
+        this.transporter.verify(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Connection timeout')), 5000)
+        )
+      ]);
       console.log('✅ Email service connected successfully');
     } catch (error) {
       console.error('❌ Email service connection failed:', error.message);
@@ -38,6 +58,16 @@ class EmailService {
       html: this.generatePasswordResetOTPHTML(userName, otp),
       text: this.generatePasswordResetOTPText(userName, otp)
     };
+
+    // If email service not configured, use fallback
+    if (!this.transporter) {
+      console.log('🔢 Password Reset OTP (Fallback Mode):', otp);
+      return { 
+        success: false, 
+        error: 'Email service not configured',
+        fallbackOTP: otp 
+      };
+    }
 
     try {
       const result = await this.transporter.sendMail(mailOptions);
@@ -336,6 +366,12 @@ class EmailService {
         </div>
       `
     };
+
+    // If email service not configured, skip sending
+    if (!this.transporter) {
+      console.log('📧 Welcome email skipped (email service not configured)');
+      return { success: false, error: 'Email service not configured' };
+    }
 
     try {
       await this.transporter.sendMail(mailOptions);
