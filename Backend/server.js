@@ -159,6 +159,33 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/payments', require('./routes/payu')); 
 
 /**
+ * Root Route
+ * 
+ * Provides API information and available endpoints.
+ */
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Fashion Forward E-commerce API',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth',
+      products: '/api/products',
+      orders: '/api/orders',
+      users: '/api/users',
+      admin: '/api/admin',
+      reviews: '/api/reviews',
+      chatbot: '/api/chatbot',
+      addresses: '/api/addresses',
+      payments: '/api/payments'
+    },
+    documentation: 'All API endpoints are prefixed with /api',
+    timestamp: new Date().toISOString()
+  });
+});
+
+/**
  * Test Routes
  * 
  * These routes are used for testing and debugging purposes.
