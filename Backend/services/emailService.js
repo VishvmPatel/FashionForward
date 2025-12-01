@@ -8,11 +8,19 @@ class EmailService {
                           process.env.SMTP_USER !== 'your-email@gmail.com' &&
                           process.env.SMTP_PASS !== 'your-app-password';
 
+    // Debug logging to help troubleshoot
+    console.log('📧 Email service configuration check:');
+    console.log('   SMTP_HOST:', process.env.SMTP_HOST || 'not set (will use default: smtp.gmail.com)');
+    console.log('   SMTP_PORT:', process.env.SMTP_PORT || 'not set (will use default: 587)');
+    console.log('   SMTP_USER:', process.env.SMTP_USER ? `${process.env.SMTP_USER.substring(0, 3)}***` : 'not set');
+    console.log('   SMTP_PASS:', process.env.SMTP_PASS ? '***set***' : 'not set');
+    console.log('   Has valid config:', hasEmailConfig);
+
     if (hasEmailConfig) {
       // Create transporter using environment variables
       this.transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: process.env.SMTP_PORT || 587,
+        port: parseInt(process.env.SMTP_PORT) || 587,
         secure: false, // true for 465, false for other ports
         auth: {
           user: process.env.SMTP_USER,
@@ -20,13 +28,18 @@ class EmailService {
         }
       });
 
+      console.log('✅ Email service configured, verifying connection...');
       // Verify transporter configuration (non-blocking)
       this.verifyConnection();
     } else {
       // Email not configured - use fallback mode
       this.transporter = null;
       console.log('📧 Email service not configured - using fallback mode (console logging)');
-      console.log('💡 To enable email: Set SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS environment variables');
+      if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        console.log('💡 Missing: SMTP_USER and/or SMTP_PASS environment variables');
+      } else if (process.env.SMTP_USER === 'your-email@gmail.com' || process.env.SMTP_PASS === 'your-app-password') {
+        console.log('💡 Warning: Using placeholder values. Please replace with actual credentials.');
+      }
     }
   }
 

@@ -447,9 +447,9 @@ router.post('/forgot-password', [
     // Generate 6-digit OTP
     const otp = OTP.generateOTP();
 
-    // Create OTP record
+    // Create OTP record (normalize email to lowercase for consistency)
     const otpRecord = new OTP({
-      email: user.email,
+      email: user.email.toLowerCase().trim(),
       otp: otp,
       expiresAt: new Date(Date.now() + 300000) // 5 minutes from now
     });
@@ -526,25 +526,68 @@ router.post('/verify-otp', [
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      const errorMessages = errors.array().map(err => err.msg).join(', ');
+      console.log('OTP verification validation errors:', errors.array());
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
+        message: `Validation failed: ${errorMessages}`,
         errors: errors.array()
       });
     }
 
     const { email, otp } = req.body;
+    
+    // Normalize email to lowercase for consistency
+    const normalizedEmail = email.toLowerCase().trim();
+    
+    console.log(`🔍 Verifying OTP for email: ${normalizedEmail}, OTP: ${otp}`);
 
     // Find valid OTP
-    const otpRecord = await OTP.findValidOTP(email, otp);
+    const otpRecord = await OTP.findValidOTP(normalizedEmail, otp);
 
     if (!otpRecord) {
+      // Check if OTP exists but is invalid/expired
+      const anyOtpRecord = await OTP.findOne({ 
+        email: normalizedEmail, 
+        otp: otp 
+      });
+      
+      if (anyOtpRecord) {
+        if (anyOtpRecord.isUsed) {
+          console.log('❌ OTP already used');
+          return res.status(400).json({
+            success: false,
+            message: 'This OTP has already been used. Please request a new one.'
+          });
+        }
+        if (anyOtpRecord.attempts >= 3) {
+          console.log('❌ OTP exceeded max attempts');
+          return res.status(400).json({
+            success: false,
+            message: 'OTP verification attempts exceeded. Please request a new OTP.'
+          });
+        }
+        if (anyOtpRecord.expiresAt <= new Date()) {
+          console.log('❌ OTP expired');
+          return res.status(400).json({
+            success: false,
+            message: 'OTP has expired. Please request a new one.'
+          });
+        }
+      }
+      
+      console.log('❌ Invalid OTP or email mismatch');
       return res.status(400).json({
         success: false,
-        message: 'Invalid or expired OTP. Please request a new one.'
+        message: 'Invalid OTP. Please check the code and try again, or request a new one.'
       });
     }
 
+    // Increment attempts (even on success, to track usage)
+    await otpRecord.incrementAttempts();
+
+    console.log('✅ OTP verified successfully');
+    
     // Don't mark OTP as used yet - only verify it's valid
     res.json({
       success: true,
@@ -553,9 +596,11 @@ router.post('/verify-otp', [
 
   } catch (error) {
     console.error('OTP verification error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
-      message: 'Server error during OTP verification'
+      message: 'Server error during OTP verification',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
