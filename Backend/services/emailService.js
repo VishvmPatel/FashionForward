@@ -17,25 +17,42 @@ class EmailService {
     console.log('   Has valid config:', hasEmailConfig);
 
     if (hasEmailConfig) {
-      // Create transporter using environment variables
-      // Try with connection pooling and better timeout settings
-      this.transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: parseInt(process.env.SMTP_PORT) || 587,
-        secure: false, // true for 465, false for other ports
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS
-        },
-        // Additional options for better reliability
-        connectionTimeout: 10000, // 10 seconds
-        greetingTimeout: 10000,
-        socketTimeout: 10000,
-        // Disable verification on startup - verify on first send instead
-        pool: false,
-        maxConnections: 1,
-        maxMessages: 3
-      });
+      // Check if using SendGrid (different configuration)
+      const isSendGrid = process.env.SMTP_HOST && process.env.SMTP_HOST.includes('sendgrid');
+      
+      if (isSendGrid) {
+        // SendGrid configuration
+        this.transporter = nodemailer.createTransport({
+          host: 'smtp.sendgrid.net',
+          port: 587,
+          secure: false,
+          auth: {
+            user: 'apikey',
+            pass: process.env.SMTP_PASS // SendGrid API key
+          }
+        });
+        console.log('📧 Using SendGrid email service');
+      } else {
+        // Gmail or other SMTP configuration
+        this.transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST || 'smtp.gmail.com',
+          port: parseInt(process.env.SMTP_PORT) || 587,
+          secure: false, // true for 465, false for other ports
+          auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS
+          },
+          // Additional options for better reliability
+          connectionTimeout: 15000, // 15 seconds
+          greetingTimeout: 15000,
+          socketTimeout: 15000,
+          // Disable verification on startup - verify on first send instead
+          pool: false,
+          maxConnections: 1,
+          maxMessages: 3
+        });
+        console.log('📧 Using SMTP email service (Gmail or other)');
+      }
 
       console.log('✅ Email service configured');
       console.log('💡 Note: Connection will be verified on first email send attempt');
