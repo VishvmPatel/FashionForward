@@ -30,7 +30,8 @@ export const useProfileCompletion = () => {
     try {
       console.log('Starting profile completion with data:', profileData);
       
-      const response = await fetch('http://localhost:5000/api/auth/profile', {
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiBaseUrl}/auth/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

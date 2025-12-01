@@ -9,6 +9,8 @@ import {
   EyeIcon
 } from '@heroicons/react/24/outline';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const ProductManager = () => {
   const { admin } = useAdmin();
   const [products, setProducts] = useState([]);
@@ -56,7 +58,7 @@ const ProductManager = () => {
         ...(selectedCategory && { category: selectedCategory })
       });
 
-      const response = await fetch(`http://localhost:5000/api/admin/products?${params}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/products?${params}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
@@ -81,7 +83,7 @@ const ProductManager = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/products/categories', {
+      const response = await fetch(`${API_BASE_URL}/products/categories`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
@@ -121,7 +123,7 @@ const ProductManager = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/products/${productId}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/products/${productId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -142,7 +144,7 @@ const ProductManager = () => {
 
   const handleStatusToggle = async (productId, currentStatus) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/products/${productId}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/products/${productId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -263,8 +265,8 @@ const ProductManager = () => {
       }
 
       const url = editingProduct 
-        ? `http://localhost:5000/api/admin/products/${editingProduct._id}`
-        : 'http://localhost:5000/api/admin/products';
+        ? `${API_BASE_URL}/admin/products/${editingProduct._id}`
+        : `${API_BASE_URL}/admin/products`;
       
       const method = editingProduct ? 'PUT' : 'POST';
 
@@ -301,7 +303,7 @@ const ProductManager = () => {
 
   const handleQuickUpdate = async (productId, field, value) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/products/${productId}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/products/${productId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

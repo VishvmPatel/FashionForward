@@ -10,6 +10,8 @@ import {
   CalendarIcon
 } from '@heroicons/react/24/outline';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const Analytics = () => {
   const { admin } = useAdmin();
   const [analyticsData, setAnalyticsData] = useState(null);
@@ -24,7 +26,7 @@ const Analytics = () => {
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/api/admin/analytics?range=${timeRange}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/analytics?range=${timeRange}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'

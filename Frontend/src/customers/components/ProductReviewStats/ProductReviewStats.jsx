@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import StarRating from '../StarRating/StarRating';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const ProductReviewStats = ({ productId, compact = false }) => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -8,7 +10,7 @@ const ProductReviewStats = ({ productId, compact = false }) => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/reviews/product/${productId}?page=1&limit=1`);
+        const response = await fetch(`${API_BASE_URL}/reviews/product/${productId}?page=1&limit=1`);
         const data = await response.json();
         if (data.success) {
           setStats(data.data.statistics);

@@ -9,6 +9,8 @@ import {
   ArrowTrendingDownIcon
 } from '@heroicons/react/24/outline';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const Dashboard = () => {
   const { admin } = useAdmin();
   const [dashboardData, setDashboardData] = useState(null);
@@ -22,7 +24,7 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/admin/dashboard', {
+      const response = await fetch(`${API_BASE_URL}/admin/dashboard`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'

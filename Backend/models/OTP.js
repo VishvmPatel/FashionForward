@@ -37,7 +37,7 @@ const otpSchema = new mongoose.Schema({
 
 // Index for better performance
 otpSchema.index({ email: 1 });
-otpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+// Note: expiresAt already has a TTL index from expires: 300, so we don't duplicate it here
 
 // Instance method to check if OTP is valid
 otpSchema.methods.isValid = function() {

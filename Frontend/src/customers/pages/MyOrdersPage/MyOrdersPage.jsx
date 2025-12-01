@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import apiService from '../../../services/api';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const BACKEND_URL = API_BASE_URL.replace('/api', '');
 import {
   ClipboardDocumentListIcon,
   TruckIcon,
@@ -265,7 +268,7 @@ const MyOrdersPage = () => {
                   {order.items.slice(0, 4).map((item, index) => (
                     <div key={index} className="flex-shrink-0">
                       <img
-                        src={item.image ? (item.image.startsWith('http') ? item.image : `http://localhost:5000${item.image}`) : '/images/default-product.jpg'}
+                        src={item.image ? (item.image.startsWith('http') ? item.image : `${BACKEND_URL}${item.image}`) : '/images/default-product.jpg'}
                         alt={item.name}
                         className="w-16 h-16 object-cover rounded-lg"
                       />
@@ -308,7 +311,7 @@ const MyOrdersPage = () => {
                     {selectedOrder.items.map((item, index) => (
                       <div key={index} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
                         <img
-                          src={item.image ? (item.image.startsWith('http') ? item.image : `http://localhost:5000${item.image}`) : '/images/default-product.jpg'}
+                          src={item.image ? (item.image.startsWith('http') ? item.image : `${BACKEND_URL}${item.image}`) : '/images/default-product.jpg'}
                           alt={item.name}
                           className="w-16 h-16 object-cover rounded-lg"
                         />

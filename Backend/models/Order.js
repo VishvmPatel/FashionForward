@@ -125,7 +125,7 @@ const OrderSchema = new mongoose.Schema({
 
 // Index for efficient queries
 OrderSchema.index({ user: 1, createdAt: -1 });
-OrderSchema.index({ orderNumber: 1 });
+// Note: orderNumber already has an index from unique: true, so we don't duplicate it here
 OrderSchema.index({ orderStatus: 1 });
 
 // Pre-save middleware to generate order number and update timestamps

@@ -10,6 +10,8 @@ import {
   CalendarIcon
 } from '@heroicons/react/24/outline';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const UserManager = () => {
   const { admin } = useAdmin();
   const [users, setUsers] = useState([]);
@@ -34,7 +36,7 @@ const UserManager = () => {
         ...(selectedRole && { role: selectedRole })
       });
 
-      const response = await fetch(`http://localhost:5000/api/admin/users?${params}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/users?${params}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'

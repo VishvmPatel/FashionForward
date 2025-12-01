@@ -1,6 +1,7 @@
 class MLChatbotService {
   constructor() {
-    this.baseURL = 'http://localhost:5000/api/chatbot';
+    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    this.baseURL = `${apiBaseUrl}/chatbot`;
     this.sessionId = this.generateSessionId();
     this.conversationHistory = [];
   }

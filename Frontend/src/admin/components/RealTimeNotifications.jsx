@@ -19,7 +19,9 @@ const RealTimeNotifications = () => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    const newSocket = io('http://localhost:5000', {
+    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    const socketUrl = apiBaseUrl.replace('/api', '');
+    const newSocket = io(socketUrl, {
       transports: ['websocket', 'polling']
     });
 

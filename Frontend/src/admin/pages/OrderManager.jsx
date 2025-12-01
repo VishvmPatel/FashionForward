@@ -8,6 +8,8 @@ import {
   ClockIcon
 } from '@heroicons/react/24/outline';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const OrderManager = () => {
   const { admin } = useAdmin();
   const [orders, setOrders] = useState([]);
@@ -43,7 +45,7 @@ const OrderManager = () => {
         ...(selectedStatus && { status: selectedStatus })
       });
 
-      const response = await fetch(`http://localhost:5000/api/admin/orders?${params}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/orders?${params}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
@@ -68,7 +70,7 @@ const OrderManager = () => {
 
   const handleStatusUpdate = async (orderId, newStatus, trackingNumber = '', notes = '') => {
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/orders/${orderId}/status`, {
+      const response = await fetch(`${API_BASE_URL}/admin/orders/${orderId}/status`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

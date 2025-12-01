@@ -182,8 +182,8 @@ const userSchema = new mongoose.Schema({
  * Database Indexes
  * 
  * These indexes improve query performance for frequently accessed fields.
+ * Note: email already has an index from unique: true, so we don't duplicate it here.
  */
-userSchema.index({ email: 1 }); // Index for email lookups
 userSchema.index({ 'addresses.pincode': 1 }); // Index for address-based queries
 
 /**
