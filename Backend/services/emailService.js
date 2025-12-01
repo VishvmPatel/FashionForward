@@ -18,6 +18,7 @@ class EmailService {
 
     if (hasEmailConfig) {
       // Create transporter using environment variables
+      // Try with connection pooling and better timeout settings
       this.transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST || 'smtp.gmail.com',
         port: parseInt(process.env.SMTP_PORT) || 587,
@@ -25,12 +26,21 @@ class EmailService {
         auth: {
           user: process.env.SMTP_USER,
           pass: process.env.SMTP_PASS
-        }
+        },
+        // Additional options for better reliability
+        connectionTimeout: 10000, // 10 seconds
+        greetingTimeout: 10000,
+        socketTimeout: 10000,
+        // Disable verification on startup - verify on first send instead
+        pool: false,
+        maxConnections: 1,
+        maxMessages: 3
       });
 
-      console.log('✅ Email service configured, verifying connection...');
-      // Verify transporter configuration (non-blocking)
-      this.verifyConnection();
+      console.log('✅ Email service configured');
+      console.log('💡 Note: Connection will be verified on first email send attempt');
+      // Don't verify on startup - verify on first actual email send
+      // This avoids timeout issues with cloud providers
     } else {
       // Email not configured - use fallback mode
       this.transporter = null;
@@ -47,16 +57,22 @@ class EmailService {
     if (!this.transporter) return;
     
     try {
+      // Try to verify connection with a longer timeout
       await Promise.race([
         this.transporter.verify(),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Connection timeout')), 5000)
+          setTimeout(() => reject(new Error('Connection timeout after 10 seconds')), 10000)
         )
       ]);
       console.log('✅ Email service connected successfully');
     } catch (error) {
-      console.error('❌ Email service connection failed:', error.message);
-      console.log('📧 Email service will use fallback mode (console logging)');
+      console.error('❌ Email service connection verification failed:', error.message);
+      console.log('⚠️  This might be due to:');
+      console.log('   1. Gmail blocking SMTP from cloud providers');
+      console.log('   2. Incorrect app password');
+      console.log('   3. Network restrictions');
+      console.log('📧 Email service will still attempt to send emails, but verification failed');
+      console.log('💡 Emails will be sent when needed - check logs for success/failure');
     }
   }
 
@@ -83,14 +99,22 @@ class EmailService {
     }
 
     try {
-      const result = await this.transporter.sendMail(mailOptions);
+      // Try to send email with timeout
+      const result = await Promise.race([
+        this.transporter.sendMail(mailOptions),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Email send timeout after 15 seconds')), 15000)
+        )
+      ]);
       console.log('✅ Password reset OTP sent successfully:', result.messageId);
       return { success: true, messageId: result.messageId };
     } catch (error) {
-      console.error('❌ Failed to send password reset OTP:', error);
+      console.error('❌ Failed to send password reset OTP:', error.message);
+      console.error('   Error details:', error.code || 'Unknown error code');
       
-      // Fallback: Log the OTP to console for development
-      console.log('🔢 Password Reset OTP (Development):', otp);
+      // Fallback: Log the OTP to console
+      console.log('🔢 Password Reset OTP (Fallback - check logs):', otp);
+      console.log('   Email:', userEmail);
       
       return { 
         success: false, 
